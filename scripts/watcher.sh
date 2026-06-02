@@ -36,4 +36,14 @@ sleep "$gap" 2>/dev/null || exit 0
 still_armed || exit 0
 bash "$DIR/notify.sh" 2 "$sid" "$cwd" "$TIER2" || true
 
+# ── 三级: 加急电话 (仅当配置了飞书自建应用 LARK_APP_ID + TIER3_DELAY > TIER2) ──
+if [ -n "${LARK_APP_ID:-}" ] && [ -n "${TIER3_DELAY:-}" ]; then
+  gap3=$(( TIER3_DELAY - TIER2 ))
+  if [ "$gap3" -gt 0 ]; then
+    sleep "$gap3" 2>/dev/null || exit 0
+    still_armed || exit 0
+    bash "$DIR/urgent_phone.sh" "$cwd" || true
+  fi
+fi
+
 exit 0

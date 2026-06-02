@@ -100,9 +100,18 @@ claude-idle-alert/
 
 ---
 
+## tier-3:加急电话(可选)
+
+飞书「电话加急」= 飞书系统**拨打你绑定的手机号**,合成语音念出消息(真·来电,不是 App 内 VoIP)。
+需**企业自建应用**(webhook 机器人做不到)。配齐 `config.sh` 里的 `LARK_APP_ID/SECRET/USER_OPEN_ID`
+后,空闲超过 `TIER3_DELAY`(默认 15 分钟)仍没回 → 自动打电话。流程:
+`tenant_access_token → 发消息拿 message_id → urgent_phone`(见 `scripts/urgent_phone.sh`)。
+
+飞书侧前置:建自建应用 → 开「发送消息 + 加急」权限 → 发布且你在可用范围 → 你的账号绑过手机号 → 拿到你的 open_id。
+
 ## 路线图
 
-- [ ] tier-3 加急电话(飞书自建应用 `urgent_phone`,扩展点已在 `notify.sh` 留好)
+- [x] tier-3 加急电话(飞书自建应用 `urgent_phone`)
 - [ ] 多渠道(钉钉 / 企微 / Telegram / Bark)—— 改 `notify.sh` 的 payload 即可
 
 ## License

@@ -24,3 +24,11 @@ AT_OPEN_ID=""
 
 # 飞书机器人若开了「自定义关键词」安全设置, 消息文字必须含该词 (默认 Claude)。
 KEYWORD="Claude"
+
+# ───────── tier-3: 加急电话 (可选, 默认关闭) ─────────
+# 飞书「电话加急」= 飞书系统拨打你绑定的手机号, 合成语音念出消息 (真·来电, 不是 App 内 VoIP)。
+# 需「企业自建应用」(webhook 机器人做不到), 留空 LARK_APP_ID 则不启用, 只到 tier-2 文本。
+LARK_APP_ID=""           # 自建应用 app_id (cli_xxx)
+LARK_APP_SECRET=""       # 自建应用 app_secret
+LARK_USER_OPEN_ID=""     # 打给谁: 你自己的 open_id (ou_xxx), 且该账号要绑过手机号
+TIER3_DELAY=900          # 空闲多少秒后打电话 (须 > TIER2_DELAY, 默认 900=15 分钟)
