@@ -1,6 +1,6 @@
 ---
 name: idle-alert
-description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude 要你拍板 (问问题/计划待审批/权限弹窗) 立刻飞书; 停下没人回则延时升级 @你。用户说「配置空闲提醒 / 设置离开提醒 / 人不在时通知我 / 看门狗提醒 / idle alert / dead man switch / 配一下飞书提醒」时触发。本 skill 只负责填 webhook + 自检; 运行时机制由本插件的 hooks 自动接线 (装插件即生效, 不改 settings.json)。
+description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude 要你拍板 (问问题/计划待审批/权限弹窗) 立刻飞书; 停下没人回则延时升级 @你; 可选 tier-3 飞书电话语音。用户说「配置空闲提醒 / 设置离开提醒 / 人不在时通知我 / 看门狗提醒 / idle alert / dead man switch / 配一下飞书提醒 / 配飞书打电话提醒」时触发。本 skill 收集 webhook(及可选电话凭据) + 自检; 运行时机制由插件 hooks 自动接线 (装插件即生效, 不改 settings.json)。
 ---
 
 # idle-alert — 提醒配置向导
@@ -9,15 +9,16 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 延时空闲看门狗) 在**安装插件时已由 `hooks/hooks.json` 自动接线**, 任意项目都生效,
 **不需要改任何项目的 settings.json**。本 skill 只做: **收集配置 → 写本地配置文件 → 自检**。
 
-> 覆盖两层:
+> 覆盖:
 > - **即时**: Claude 问你问题 / 计划待审批 / 权限弹窗 → 立刻飞书
-> - **延时**: Claude 停下没人回 → 默认 2 分钟提醒, 10 分钟升级 @你
+> - **延时**: Claude 停下没人回 → 2 分钟提醒, 10 分钟升级 @你
+> - **可选 tier-3**: 20 分钟还没回 → 飞书电话语音 (需企业自建应用)
 
 ## 职责边界
 
 **做**: 问 webhook/阈值 → 写 `~/.claude/idle-alert/config.sh` (含密钥, 不入库) → 发测试消息
-**不做**: ❌ 不碰任何 settings.json (插件自带接线) ❌ 不把 webhook 写进任何会入库的文件
-❌ 不实现 tier-3 加急电话 (需飞书自建应用)
+**不做**: ❌ 不碰任何 settings.json (插件自带接线) ❌ 不把 webhook / app_secret 写进任何会入库的文件
+❌ 不替用户在飞书后台建应用/开权限 (那是用户在 open.feishu.cn 的操作, 本 skill 只收集已就绪的凭据)
 
 ## 执行流程
 
@@ -51,10 +52,35 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 
 > 拿 webhook: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
 
+### 第 2.5 步: (可选) tier-3 加急电话
+
+问用户「要不要开『空闲太久自动打电话』? (需飞书企业自建应用, 比 webhook 麻烦)」。
+不要 → 跳过, LARK_* 留空即可 (只到 tier-2)。要 → 先确认前置都做好:
+
+- 建「企业自建应用」, 拿 `app_id` / `app_secret`
+- 开 3 个**「应用」身份**权限并**创建版本→发布**:
+  `contact:user.id:readonly` / `im:message:send_as_bot` / `im:message.urgent:phone`
+- 账号绑过手机号, 自己在应用可用范围内
+
+然后收集 `LARK_APP_ID` / `LARK_APP_SECRET` / 用户**手机号** / `TIER3_DELAY`(默认 1200)。
+**open_id 不用手填**, 用 app 凭据 + 手机号自动查 (下面脚本), 失败多半是权限没发布:
+
+```bash
+TOK=$(curl -s -X POST "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal" \
+  -H 'Content-Type: application/json' -d "{\"app_id\":\"<APP_ID>\",\"app_secret\":\"<APP_SECRET>\"}" \
+  | jq -r '.tenant_access_token')
+curl -s -X POST "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id?user_id_type=open_id" \
+  -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
+  -d "{\"mobiles\":[\"+86<手机号>\"]}" | jq -r '.data.user_list[0].user_id'
+```
+
+把查到的 `ou_xxx` 作为 `LARK_USER_OPEN_ID` 写入配置。
+
 ### 第 3 步: 写配置文件
 
 `mkdir -p "$(dirname <CFG>)"`, 把值写到 `<CFG>` (格式见插件内 `scripts/config.example.sh`),
-写完 `chmod 600`。**绝不**回显 webhook 全文 (可只显尾部 4 位确认)。
+写完 `chmod 600`。若开了 tier-3, 一并写入 `LARK_APP_ID/LARK_APP_SECRET/LARK_USER_OPEN_ID/TIER3_DELAY`。
+**绝不**回显 webhook / app_secret 全文 (可只显尾部 4 位确认)。
 
 ### 第 4 步: 发测试消息自检 (直接 curl, 不依赖插件路径)
 
@@ -66,11 +92,18 @@ curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' \
 
 让用户去飞书群确认收到。没收到 → 排查 webhook / 关键词 / 机器人是否被禁。
 
+**若开了 tier-3, 再真打一通测试电话**(直接调插件脚本, 会真的响):
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/cache/claude-idle-alert/claude-idle-alert/*}"/scripts/urgent_phone.sh "$PWD"
+```
+
+让用户确认电话接到。报 `99991672 缺权限` → 那个权限没发布; 报别的 → 按 msg 排查。
+
 ### 第 5 步: 收尾
 
 - 提醒 **Reload Window** (hook 在会话启动时加载; 自定义路径改了 env 也必须 reload)
-- 一句话默认行为: "要你拍板 → 立刻飞书; 停下 2 分钟没回 → 提醒, 10 分钟没回 → 升级"
-- 想要加急电话档 → 需建飞书自建应用, 以后再说
+- 一句话默认行为: "要你拍板 → 立刻飞书; 停 2 分钟没回 → 提醒, 10 分钟 → 升级@, 20 分钟 → 打电话(若开了 tier-3)"
 
 ## 设计原则
 

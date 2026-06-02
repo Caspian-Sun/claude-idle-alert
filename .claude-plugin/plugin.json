@@ -1,6 +1,6 @@
 {
   "name": "claude-idle-alert",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Claude 决策提醒 + 空闲看门狗 (dead-man's switch): 需要你拍板时立刻飞书, 停下没人回则延时升级。任意项目可用, 安装即自动接线, 不改 settings.json。",
   "author": {
     "name": "Caspian-Sun"
