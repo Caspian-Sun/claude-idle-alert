@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Claude Code 空闲/决策提醒插件市场",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "plugins": [
     {
       "name": "claude-idle-alert",
       "source": "./",
       "description": "Claude 决策提醒 + 空闲看门狗: 需要你拍板时立刻飞书, 停下没人回则延时升级。安装即自动接线, 任意项目可用。",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "Caspian-Sun"
       },

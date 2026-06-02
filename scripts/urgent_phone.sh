@@ -8,9 +8,12 @@
 #   3) 对该 message_id 调 urgent_phone, 触发电话 (飞书会打电话念这条消息)
 # 仅当配齐 LARK_APP_ID/SECRET/USER_OPEN_ID 才动作; 否则静默 exit 0。
 #
-# 前置 (在飞书开放平台 open.feishu.cn 配好):
+# 前置 (在飞书开放平台 open.feishu.cn 配好, 全部选「应用」身份权限, 加完要「创建版本→发布」):
 #   - 建「企业自建应用」, 拿 app_id / app_secret
-#   - 开权限: 发送消息 (im:message) + 加急 (im:message.urgent.status:write)
+#   - 开权限 (实测可用的确切标识):
+#       contact:user.id:readonly      (用手机号查 open_id)
+#       im:message:send_as_bot        (以应用身份发消息)
+#       im:message.urgent:phone       (电话加急 ← 注意是这个, 不是 status:write)
 #   - 发布应用并让你自己在可用范围内; 你的飞书账号要绑过手机号
 #   - 拿到你自己的 open_id (ou_xxx)
 set -u

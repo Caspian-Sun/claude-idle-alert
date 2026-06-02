@@ -107,7 +107,13 @@ claude-idle-alert/
 后,空闲超过 `TIER3_DELAY`(默认 15 分钟)仍没回 → 自动打电话。流程:
 `tenant_access_token → 发消息拿 message_id → urgent_phone`(见 `scripts/urgent_phone.sh`)。
 
-飞书侧前置:建自建应用 → 开「发送消息 + 加急」权限 → 发布且你在可用范围 → 你的账号绑过手机号 → 拿到你的 open_id。
+飞书侧前置(权限全选**「应用」身份**,加完必须**创建版本→发布**才生效):
+1. 建「企业自建应用」→ 拿 `app_id` / `app_secret`
+2. 开 3 个权限(确切标识,实测可用):
+   - `contact:user.id:readonly`(用手机号查 open_id)
+   - `im:message:send_as_bot`(发消息)
+   - `im:message.urgent:phone`(电话加急)
+3. 发布版本 → 你在可用范围 → 账号绑过手机号 → 拿到你的 `open_id`(ou_xxx)
 
 ## 路线图
 

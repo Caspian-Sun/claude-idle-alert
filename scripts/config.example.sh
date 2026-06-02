@@ -28,6 +28,8 @@ KEYWORD="Claude"
 # ───────── tier-3: 加急电话 (可选, 默认关闭) ─────────
 # 飞书「电话加急」= 飞书系统拨打你绑定的手机号, 合成语音念出消息 (真·来电, 不是 App 内 VoIP)。
 # 需「企业自建应用」(webhook 机器人做不到), 留空 LARK_APP_ID 则不启用, 只到 tier-2 文本。
+# 应用需开 3 个「应用」身份权限并发布版本:
+#   contact:user.id:readonly / im:message:send_as_bot / im:message.urgent:phone
 LARK_APP_ID=""           # 自建应用 app_id (cli_xxx)
 LARK_APP_SECRET=""       # 自建应用 app_secret
 LARK_USER_OPEN_ID=""     # 打给谁: 你自己的 open_id (ou_xxx), 且该账号要绑过手机号
