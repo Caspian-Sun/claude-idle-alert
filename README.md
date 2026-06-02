@@ -44,6 +44,11 @@ claude plugin install claude-idle-alert
 | `KEYWORD` | 飞书自定义关键词(消息须含) | Claude |
 
 **没配 webhook → 全程静默 `exit 0`,零副作用** —— 所以装了不配也不会打扰任何人。
+装了还没配时,每次开会话(每天一次)会**主动提醒**你去跑 `/idle-alert`(SessionStart 检测)。
+
+**自定义配置位置**:默认 `~/.claude/idle-alert/config.sh`(和安装目录分离,升级不丢)。
+想换路径:跑 `/idle-alert` 时选"自定义目录",或手动在 user 级 `~/.claude/settings.json` 加
+`{ "env": { "CLAUDE_IDLE_CONFIG": "/你的路径/config.sh" } }`(改 env 需 Reload)。
 
 ---
 

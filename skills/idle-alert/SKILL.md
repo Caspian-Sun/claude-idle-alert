@@ -21,9 +21,25 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 
 ## 执行流程
 
-### 第 1 步: 收集配置
+### 第 1 步: 选配置文件位置 (主动问用户)
 
-先一句话说明配什么 (即时飞书 + 延时升级), 然后问 (有默认给默认):
+**先问用户配置文件放哪**, 给两个选项:
+
+1. **默认 (推荐)**: `~/.claude/idle-alert/config.sh`
+   —— 跟安装目录分离, `plugin update`/重装都不会丢; 大多数人选这个。
+2. **自定义目录**: 用户给一个路径 (如团队共享盘 / 别的目录)。
+   选这个时**必须**额外做一步: 把环境变量写进 user 级 `~/.claude/settings.json` 的 `env` 块,
+   让所有项目的 hook 都能找到:
+   ```jsonc
+   { "env": { "CLAUDE_IDLE_CONFIG": "<用户给的绝对路径>" } }
+   ```
+   (合并进已有 `env`, 不要覆盖其它键。) 这一步改了 settings, **需要 Reload 才生效**。
+
+记下最终路径, 记为 `<CFG>` 供后续步骤用 (默认即 `~/.claude/idle-alert/config.sh`)。
+
+### 第 2 步: 收集配置
+
+一句话说明配什么 (即时飞书 + 延时升级), 然后问 (有默认给默认):
 
 | 配置项 | 说明 | 默认 |
 |--------|------|------|
@@ -35,25 +51,24 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 
 > 拿 webhook: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
 
-### 第 2 步: 写本地配置文件
+### 第 3 步: 写配置文件
 
-`mkdir -p ~/.claude/idle-alert`, 然后把值写到 `~/.claude/idle-alert/config.sh`
-(格式见插件内 `scripts/config.example.sh`), 写完 `chmod 600`。
-**绝不**回显 webhook 全文 (可只显尾部 4 位确认)。
+`mkdir -p "$(dirname <CFG>)"`, 把值写到 `<CFG>` (格式见插件内 `scripts/config.example.sh`),
+写完 `chmod 600`。**绝不**回显 webhook 全文 (可只显尾部 4 位确认)。
 
-### 第 3 步: 发测试消息自检 (直接 curl, 不依赖插件路径)
+### 第 4 步: 发测试消息自检 (直接 curl, 不依赖插件路径)
 
 ```bash
-source ~/.claude/idle-alert/config.sh
+source <CFG>
 curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' \
   -d "$(jq -nc --arg t "🔔 ${KEYWORD:-Claude} idle-alert 测试 — 配置成功, 提醒已就绪" '{msg_type:"text",content:{text:$t}}')"
 ```
 
 让用户去飞书群确认收到。没收到 → 排查 webhook / 关键词 / 机器人是否被禁。
 
-### 第 4 步: 收尾
+### 第 5 步: 收尾
 
-- 提醒 **Reload Window** (hook 在会话启动时加载)
+- 提醒 **Reload Window** (hook 在会话启动时加载; 自定义路径改了 env 也必须 reload)
 - 一句话默认行为: "要你拍板 → 立刻飞书; 停下 2 分钟没回 → 提醒, 10 分钟没回 → 升级"
 - 想要加急电话档 → 需建飞书自建应用, 以后再说
 
