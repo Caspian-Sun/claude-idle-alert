@@ -54,10 +54,10 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 
 ### 第 2.5 步: (可选) tier-3 加急电话
 
-问用户「要不要开『空闲太久自动打电话』? (需飞书企业自建应用, 比 webhook 麻烦)」。
+问用户「要不要开『空闲太久自动打电话』? (需飞书自建应用, 个人版也能建, 比 webhook 麻烦)」。
 不要 → 跳过, LARK_* 留空即可 (只到 tier-2)。要 → 先确认前置都做好:
 
-- 建「企业自建应用」, 拿 `app_id` / `app_secret`
+- 建「自建应用」(飞书个人版/企业版均可), 拿 `app_id` / `app_secret`
 - 开 3 个**「应用」身份**权限并**创建版本→发布**:
   `contact:user.id:readonly` / `im:message:send_as_bot` / `im:message.urgent:phone`
 - 账号绑过手机号, 自己在应用可用范围内

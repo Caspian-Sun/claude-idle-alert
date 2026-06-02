@@ -1,32 +1,41 @@
 # claude-idle-alert
 
-> Claude Code 的**决策提醒 + 空闲看门狗** (dead-man's switch)。
-> Claude 需要你拍板时**立刻**飞书提醒;停下后没人回则**延时升级**。
-> **任意项目可用,安装即自动接线,不改任何 settings.json。**
+> Claude Code **离座提醒**插件:需要你拍板时**立刻**飞书提醒,停下没人回则**延时升级**,还能**打电话叫你**。
+> 装一次,**任意项目**生效,**不改任何 settings.json**。
 
-人离开电脑,Claude 跑到一半弹 Yes/No 或问个问题就干等,没人知道。这个插件用两层提醒解决:
-
-| 层 | 何时响 | 靠什么信号 |
-|----|--------|-----------|
-| **即时** | Claude 问你问题 / 计划待审批 / 权限弹窗 | `PreToolUse(AskUserQuestion\|ExitPlanMode)`(任何环境都触发)+ `Notification(permission_prompt)` |
-| **延时** | Claude 停下后,你 N 分钟没回 | `Stop` 布防 → 看门狗 → 你没回就升级 |
-
----
-
-## 安装
+## 快速开始(4 步,装完就能用)
 
 ```bash
-# 1. 添加 marketplace (用 HTTPS 完整地址; 不要用 owner/repo 简写, 它默认走 SSH, 没配 key 会失败)
+# 1. 添加 marketplace (用 HTTPS 完整地址; owner/repo 简写默认走 SSH, 没配 key 会失败)
 claude plugin marketplace add https://github.com/Caspian-Sun/claude-idle-alert.git
+
 # 2. 安装插件 (hooks 自动接线, 不碰你项目的 settings.json)
 claude plugin install claude-idle-alert
-# 3. 配置你的飞书 webhook (跑 skill 向导)
-#    在 Claude Code 里输入: /idle-alert
+
+# 3. 在 Claude Code 里输入 /idle-alert, 按问答填飞书 webhook (要打电话就跟着配 tier-3)
+
 # 4. Reload Window
 ```
 
-> 前置:`jq` 和 `curl`(macOS/Linux 一般自带;`jq` 没有就 `brew install jq`)。
-> 更新到新版本:`claude plugin marketplace update claude-idle-alert && claude plugin install claude-idle-alert`。
+就这 4 步。配置只问你飞书 webhook,运行机制插件自动接好。
+
+> 前置:`jq` + `curl`(macOS/Linux 一般自带;缺 jq 就 `brew install jq`)。
+> 更新:`claude plugin marketplace update claude-idle-alert && claude plugin install claude-idle-alert`
+> 卸载:`claude plugin uninstall claude-idle-alert`
+
+---
+
+## 它能干什么
+
+人离开电脑,Claude 跑到一半弹 Yes/No 或问个问题就干等,没人知道。用分级提醒解决:
+
+| 级别 | 何时响 | 方式 |
+|------|--------|------|
+| **即时** | Claude 问你 / 计划待审批 / 权限弹窗 | 飞书文本 |
+| **一级 / 二级** | 停下后你 2 / 10 分钟没回 | 飞书文本 / 文本 + @你 |
+| **tier-3(可选)** | 20 分钟还没回 | **飞书打电话**(语音念消息),见下方 |
+
+> 信号来源:即时靠 `PreToolUse(AskUserQuestion\|ExitPlanMode)`(任何环境都触发)+ `Notification(permission_prompt)`;延时靠 `Stop` 布防 → 看门狗 → 你没回就升级。
 
 ---
 
@@ -103,12 +112,12 @@ claude-idle-alert/
 ## tier-3:加急电话(可选)
 
 飞书「电话加急」= 飞书系统**拨打你绑定的手机号**,合成语音念出消息(真·来电,不是 App 内 VoIP)。
-需**企业自建应用**(webhook 机器人做不到)。配齐 `config.sh` 里的 `LARK_APP_ID/SECRET/USER_OPEN_ID`
-后,空闲超过 `TIER3_DELAY`(默认 15 分钟)仍没回 → 自动打电话。流程:
-`tenant_access_token → 发消息拿 message_id → urgent_phone`(见 `scripts/urgent_phone.sh`)。
+需**飞书自建应用**(**个人版也能建**,不一定要企业版;webhook 机器人做不到)。配齐 `config.sh` 里的
+`LARK_APP_ID/SECRET/USER_OPEN_ID` 后,空闲超过 `TIER3_DELAY`(默认 20 分钟)仍没回 → 自动打电话。
+流程:`tenant_access_token → 发消息拿 message_id → urgent_phone`(见 `scripts/urgent_phone.sh`)。
 
 飞书侧前置(权限全选**「应用」身份**,加完必须**创建版本→发布**才生效):
-1. 建「企业自建应用」→ 拿 `app_id` / `app_secret`
+1. 去 open.feishu.cn 建「自建应用」(**个人版/企业版均可**)→ 拿 `app_id` / `app_secret`
 2. 开 3 个权限(确切标识,实测可用):
    - `contact:user.id:readonly`(用手机号查 open_id)
    - `im:message:send_as_bot`(发消息)

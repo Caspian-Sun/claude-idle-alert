@@ -9,7 +9,7 @@
 # 仅当配齐 LARK_APP_ID/SECRET/USER_OPEN_ID 才动作; 否则静默 exit 0。
 #
 # 前置 (在飞书开放平台 open.feishu.cn 配好, 全部选「应用」身份权限, 加完要「创建版本→发布」):
-#   - 建「企业自建应用」, 拿 app_id / app_secret
+#   - 建「自建应用」(飞书个人版/企业版均可), 拿 app_id / app_secret
 #   - 开权限 (实测可用的确切标识):
 #       contact:user.id:readonly      (用手机号查 open_id)
 #       im:message:send_as_bot        (以应用身份发消息)
