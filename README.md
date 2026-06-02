@@ -16,8 +16,8 @@
 ## 安装
 
 ```bash
-# 1. 添加 marketplace
-claude plugin marketplace add Caspian-Sun/claude-idle-alert
+# 1. 添加 marketplace (用 HTTPS 完整地址; 不要用 owner/repo 简写, 它默认走 SSH, 没配 key 会失败)
+claude plugin marketplace add https://github.com/Caspian-Sun/claude-idle-alert.git
 # 2. 安装插件 (hooks 自动接线, 不碰你项目的 settings.json)
 claude plugin install claude-idle-alert
 # 3. 配置你的飞书 webhook (跑 skill 向导)
@@ -26,6 +26,7 @@ claude plugin install claude-idle-alert
 ```
 
 > 前置:`jq` 和 `curl`(macOS/Linux 一般自带;`jq` 没有就 `brew install jq`)。
+> 更新到新版本:`claude plugin marketplace update claude-idle-alert && claude plugin install claude-idle-alert`。
 
 ---
 
