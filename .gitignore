@@ -1,2 +1,8 @@
 .DS_Store
 *.log
+
+# Real config holds secrets (webhook / app_secret) and must never be committed.
+# It normally lives at ~/.claude/idle-alert/config.sh, outside this repo; this is a defensive guard
+# in case anyone creates one inside the repo. The committed sample is scripts/config.example.sh.
+config.sh
+**/config.sh
