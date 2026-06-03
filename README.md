@@ -1,3 +1,8 @@
+<p align="right">
+  <a href="https://github.com/Caspian-Sun/claude-idle-alert/blob/main/README.md">English</a> ·
+  <strong>中文</strong>
+</p>
+
 # claude-idle-alert
 
 **📞 离座太久、Claude 卡住等你?先飞书发消息,再 @你,20 分钟还没回 —— 直接打电话念给你听。**
