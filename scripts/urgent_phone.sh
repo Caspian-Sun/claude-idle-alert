@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# urgent_phone.sh — tier-3: 飞书「加急电话」(需企业自建应用, 不是 webhook 机器人)
+# urgent_phone.sh — tier-3: Feishu "urgent phone call" (needs a custom app, not a webhook bot)
 #
-# 参数: $1=cwd (用于项目名)
-# 三步流程 (飞书服务端 API):
-#   1) 用 app_id/app_secret 换 tenant_access_token
-#   2) 用 app 给你本人 (open_id) 发一条单聊消息, 拿到 message_id
-#   3) 对该 message_id 调 urgent_phone, 触发电话 (飞书会打电话念这条消息)
-# 仅当配齐 LARK_APP_ID/SECRET/USER_OPEN_ID 才动作; 否则静默 exit 0。
+# Args: $1=cwd (used for the project name)
+# Three-step flow (Feishu server-side API):
+#   1) exchange app_id/app_secret for a tenant_access_token
+#   2) use the app to send yourself (open_id) a direct message, getting a message_id
+#   3) call urgent_phone on that message_id to trigger the call (Feishu calls and reads this message aloud)
+# Acts only when LARK_APP_ID/SECRET/USER_OPEN_ID are all set; otherwise silent exit 0.
 #
-# 前置 (在飞书开放平台 open.feishu.cn 配好, 全部选「应用」身份权限, 加完要「创建版本→发布」):
-#   - 建「自建应用」(飞书个人版/企业版均可), 拿 app_id / app_secret
-#   - 开权限 (实测可用的确切标识):
-#       contact:user.id:readonly      (用手机号查 open_id)
-#       im:message:send_as_bot        (以应用身份发消息)
-#       im:message.urgent:phone       (电话加急 ← 注意是这个, 不是 status:write)
-#   - 发布应用并让你自己在可用范围内; 你的飞书账号要绑过手机号
-#   - 拿到你自己的 open_id (ou_xxx)
+# Prerequisites (set up on the Feishu open platform open.feishu.cn, all with "application"-identity permissions; after adding them you must "create a version → publish"):
+#   - Create a "custom app" (Feishu personal or enterprise both work), get app_id / app_secret
+#   - Enable permissions (the exact identifiers, verified working):
+#       contact:user.id:readonly      (look up open_id by phone number)
+#       im:message:send_as_bot        (send messages as the app)
+#       im:message.urgent:phone       (phone urgency ← note it's this one, not status:write)
+#   - Publish the app and make sure you're in its availability scope; your Feishu account must have a bound phone number
+#   - Obtain your own open_id (ou_xxx)
 set -u
 
 cwd="${1:-$PWD}"
@@ -30,7 +30,7 @@ command -v curl >/dev/null 2>&1 || exit 0
 base="https://open.feishu.cn/open-apis"
 proj="$(basename "$cwd" 2>/dev/null)"; [ -n "$proj" ] || proj="(unknown)"
 kw="${KEYWORD:-Claude}"
-text="${kw} 长时间无响应, 项目【${proj}】急需你处理 (电话加急)"
+text="${kw} has been unresponsive for a long time; project [${proj}] urgently needs your attention (phone urgency)"
 
 # 1) tenant_access_token
 tok="$(curl -s -X POST "$base/auth/v3/tenant_access_token/internal" \
@@ -39,7 +39,7 @@ tok="$(curl -s -X POST "$base/auth/v3/tenant_access_token/internal" \
   2>/dev/null | jq -r '.tenant_access_token // empty' 2>/dev/null)"
 [ -n "$tok" ] || exit 0
 
-# 2) 发消息拿 message_id (content 必须是「字符串化的 JSON」, 用 --arg 让 jq 自动转义)
+# 2) send a message to get message_id (content must be "stringified JSON"; --arg lets jq escape it automatically)
 inner="$(jq -nc --arg t "$text" '{text:$t}')"
 msg_id="$(curl -s -X POST "$base/im/v1/messages?receive_id_type=open_id" \
   -H "Authorization: Bearer $tok" -H 'Content-Type: application/json' \
@@ -47,7 +47,7 @@ msg_id="$(curl -s -X POST "$base/im/v1/messages?receive_id_type=open_id" \
   2>/dev/null | jq -r '.data.message_id // empty' 2>/dev/null)"
 [ -n "$msg_id" ] || exit 0
 
-# 3) urgent_phone — 触发电话
+# 3) urgent_phone — trigger the call
 curl -s -X PATCH "$base/im/v1/messages/$msg_id/urgent_phone?user_id_type=open_id" \
   -H "Authorization: Bearer $tok" -H 'Content-Type: application/json' \
   -d "$(jq -nc --arg u "$LARK_USER_OPEN_ID" '{user_id_list:[$u]}')" >/dev/null 2>&1 || true

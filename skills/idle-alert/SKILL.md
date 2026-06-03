@@ -1,69 +1,69 @@
 ---
 name: idle-alert
-description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude 要你拍板 (问问题/计划待审批/权限弹窗) 立刻飞书; 停下没人回则延时升级 @你; 可选 tier-3 飞书电话语音。用户说「配置空闲提醒 / 设置离开提醒 / 人不在时通知我 / 看门狗提醒 / idle alert / dead man switch / 配一下飞书提醒 / 配飞书打电话提醒」时触发。本 skill 收集 webhook(及可选电话凭据) + 自检; 运行时机制由插件 hooks 自动接线 (装插件即生效, 不改 settings.json)。
+description: Configure Claude Code idle/decision alerts (dead-man's switch). When Claude needs your call (a question / plan awaiting approval / permission prompt) it pings Feishu instantly; if it stops and nobody replies it escalates on a delay and @s you; optional tier-3 Feishu voice phone call. Triggers when the user says "configure idle alert / set up away notification / notify me when I'm away / watchdog reminder / idle alert / dead man switch / set up Feishu alerts / set up a Feishu phone-call alert". This skill collects the webhook (and optional phone-call credentials) + self-checks; the runtime mechanics are auto-wired by the plugin hooks (active the moment the plugin is installed, no settings.json changes).
 ---
 
-# idle-alert — 提醒配置向导
+# idle-alert — alert setup wizard
 
-帮当前用户在**本机**填好 webhook, 让本插件的提醒生效。运行时机制 (即时决策 hook +
-延时空闲看门狗) 在**安装插件时已由 `hooks/hooks.json` 自动接线**, 任意项目都生效,
-**不需要改任何项目的 settings.json**。本 skill 只做: **收集配置 → 写本地配置文件 → 自检**。
+Help the current user fill in the webhook on **their machine** so this plugin's alerts work. The runtime mechanics (instant
+decision hook + delayed idle watchdog) are **already auto-wired by `hooks/hooks.json` at install time**, active in any project,
+**with no need to change any project's settings.json**. This skill only does: **collect config → write the local config file → self-check**.
 
-> 覆盖:
-> - **即时**: Claude 问你问题 / 计划待审批 / 权限弹窗 → 立刻飞书
-> - **延时**: Claude 停下没人回 → 2 分钟提醒, 10 分钟升级 @你
-> - **可选 tier-3**: 20 分钟还没回 → 飞书电话语音 (需企业自建应用)
+> Coverage:
+> - **Instant**: Claude asks you a question / plan awaiting approval / permission prompt → ping Feishu immediately
+> - **Delayed**: Claude stops and nobody replies → reminder at 2 min, escalation @you at 10 min
+> - **Optional tier-3**: still no reply at 20 min → Feishu voice phone call (needs an enterprise custom app)
 
-## 职责边界
+## Scope of responsibility
 
-**做**: 问 webhook/阈值 → 写 `~/.claude/idle-alert/config.sh` (含密钥, 不入库) → 发测试消息
-**不做**: ❌ 不碰任何 settings.json (插件自带接线) ❌ 不把 webhook / app_secret 写进任何会入库的文件
-❌ 不替用户在飞书后台建应用/开权限 (那是用户在 open.feishu.cn 的操作, 本 skill 只收集已就绪的凭据)
+**Do**: ask for webhook/thresholds → write `~/.claude/idle-alert/config.sh` (contains secrets, not committed) → send a test message
+**Don't**: ❌ touch any settings.json (the plugin wires itself) ❌ write the webhook / app_secret into any file that gets committed
+❌ create the app / enable permissions in the Feishu console for the user (that's the user's action on open.feishu.cn; this skill only collects ready credentials)
 
-## 执行流程
+## Execution flow
 
-### 第 1 步: 选配置文件位置 (主动问用户)
+### Step 1: choose the config file location (ask the user)
 
-**先问用户配置文件放哪**, 给两个选项:
+**First ask the user where to put the config file**, with two options:
 
-1. **默认 (推荐)**: `~/.claude/idle-alert/config.sh`
-   —— 跟安装目录分离, `plugin update`/重装都不会丢; 大多数人选这个。
-2. **自定义目录**: 用户给一个路径 (如团队共享盘 / 别的目录)。
-   选这个时**必须**额外做一步: 把环境变量写进 user 级 `~/.claude/settings.json` 的 `env` 块,
-   让所有项目的 hook 都能找到:
+1. **Default (recommended)**: `~/.claude/idle-alert/config.sh`
+   — separate from the install dir, so `plugin update`/reinstall won't lose it; most people pick this.
+2. **Custom directory**: the user gives a path (e.g. a team shared drive / another directory).
+   When choosing this you **must** do one extra step: write the environment variable into the `env` block of the user-level `~/.claude/settings.json`,
+   so hooks in all projects can find it:
    ```jsonc
-   { "env": { "CLAUDE_IDLE_CONFIG": "<用户给的绝对路径>" } }
+   { "env": { "CLAUDE_IDLE_CONFIG": "<absolute path the user gave>" } }
    ```
-   (合并进已有 `env`, 不要覆盖其它键。) 这一步改了 settings, **需要 Reload 才生效**。
+   (Merge into the existing `env`, don't overwrite other keys.) This step changes settings, so it **requires a Reload to take effect**.
 
-记下最终路径, 记为 `<CFG>` 供后续步骤用 (默认即 `~/.claude/idle-alert/config.sh`)。
+Record the final path as `<CFG>` for the following steps (the default is `~/.claude/idle-alert/config.sh`).
 
-### 第 2 步: 收集配置
+### Step 2: collect config
 
-一句话说明配什么 (即时飞书 + 延时升级), 然后问 (有默认给默认):
+Explain in one line what's being configured (instant Feishu + delayed escalation), then ask (use defaults where given):
 
-| 配置项 | 说明 | 默认 |
-|--------|------|------|
-| `WEBHOOK_URL` | 飞书自定义机器人 webhook (必填) | 无 |
-| `TIER1_DELAY` | 空闲多少秒发一级提醒 | 120 |
-| `TIER2_DELAY` | 空闲多少秒升级 (须 > TIER1) | 600 |
-| `AT_OPEN_ID` | 升级时 @ 的飞书 open_id (ou_xxx), 可空 | 空 |
-| `KEYWORD` | 飞书自定义关键词 (消息须含) | Claude |
+| Key | Description | Default |
+|-----|-------------|---------|
+| `WEBHOOK_URL` | Feishu custom-bot webhook (required) | none |
+| `TIER1_DELAY` | seconds idle before the tier-1 alert | 120 |
+| `TIER2_DELAY` | seconds idle before escalation (must be > TIER1) | 600 |
+| `AT_OPEN_ID` | Feishu open_id (ou_xxx) to @ on escalation, optional | empty |
+| `KEYWORD` | Feishu custom keyword (must appear in the message) | Claude |
 
-> 拿 webhook: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
+> Get the webhook: Feishu group → Settings → Group Bots → Add a "Custom Bot" → copy the webhook.
 
-### 第 2.5 步: (可选) tier-3 加急电话
+### Step 2.5: (optional) tier-3 urgent phone call
 
-问用户「要不要开『空闲太久自动打电话』? (需飞书自建应用, 个人版也能建, 比 webhook 麻烦)」。
-不要 → 跳过, LARK_* 留空即可 (只到 tier-2)。要 → 先确认前置都做好:
+Ask the user "Want to enable 'auto phone call when idle too long'? (needs a Feishu custom app — a personal account can create one too, more work than a webhook)".
+No → skip, just leave LARK_* empty (stops at tier-2). Yes → first confirm the prerequisites are in place:
 
-- 建「自建应用」(飞书个人版/企业版均可), 拿 `app_id` / `app_secret`
-- 开 3 个**「应用」身份**权限并**创建版本→发布**:
+- Create a "custom app" (Feishu personal or enterprise both work), get `app_id` / `app_secret`
+- Enable 3 **"application"-identity** permissions and **create a version → publish**:
   `contact:user.id:readonly` / `im:message:send_as_bot` / `im:message.urgent:phone`
-- 账号绑过手机号, 自己在应用可用范围内
+- The account has a bound phone number and is within the app's availability scope
 
-然后收集 `LARK_APP_ID` / `LARK_APP_SECRET` / 用户**手机号** / `TIER3_DELAY`(默认 1200)。
-**open_id 不用手填**, 用 app 凭据 + 手机号自动查 (下面脚本), 失败多半是权限没发布:
+Then collect `LARK_APP_ID` / `LARK_APP_SECRET` / the user's **phone number** / `TIER3_DELAY` (default 1200).
+**The open_id doesn't need to be typed by hand** — look it up automatically from the app credentials + phone number (script below); failures are usually unpublished permissions:
 
 ```bash
 TOK=$(curl -s -X POST "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal" \
@@ -71,42 +71,42 @@ TOK=$(curl -s -X POST "https://open.feishu.cn/open-apis/auth/v3/tenant_access_to
   | jq -r '.tenant_access_token')
 curl -s -X POST "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id?user_id_type=open_id" \
   -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' \
-  -d "{\"mobiles\":[\"+86<手机号>\"]}" | jq -r '.data.user_list[0].user_id'
+  -d "{\"mobiles\":[\"+86<phone>\"]}" | jq -r '.data.user_list[0].user_id'
 ```
 
-把查到的 `ou_xxx` 作为 `LARK_USER_OPEN_ID` 写入配置。
+Write the resulting `ou_xxx` into the config as `LARK_USER_OPEN_ID`.
 
-### 第 3 步: 写配置文件
+### Step 3: write the config file
 
-`mkdir -p "$(dirname <CFG>)"`, 把值写到 `<CFG>` (格式见插件内 `scripts/config.example.sh`),
-写完 `chmod 600`。若开了 tier-3, 一并写入 `LARK_APP_ID/LARK_APP_SECRET/LARK_USER_OPEN_ID/TIER3_DELAY`。
-**绝不**回显 webhook / app_secret 全文 (可只显尾部 4 位确认)。
+`mkdir -p "$(dirname <CFG>)"`, write the values to `<CFG>` (format per `scripts/config.example.sh` in the plugin),
+then `chmod 600`. If tier-3 is enabled, also write `LARK_APP_ID/LARK_APP_SECRET/LARK_USER_OPEN_ID/TIER3_DELAY`.
+**Never** echo the full webhook / app_secret (you may show just the last 4 chars to confirm).
 
-### 第 4 步: 发测试消息自检 (直接 curl, 不依赖插件路径)
+### Step 4: send a test message to self-check (direct curl, no dependency on plugin paths)
 
 ```bash
 source <CFG>
 curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' \
-  -d "$(jq -nc --arg t "🔔 ${KEYWORD:-Claude} idle-alert 测试 — 配置成功, 提醒已就绪" '{msg_type:"text",content:{text:$t}}')"
+  -d "$(jq -nc --arg t "🔔 ${KEYWORD:-Claude} idle-alert test — config succeeded, alerts are ready" '{msg_type:"text",content:{text:$t}}')"
 ```
 
-让用户去飞书群确认收到。没收到 → 排查 webhook / 关键词 / 机器人是否被禁。
+Have the user confirm receipt in the Feishu group. Not received → check the webhook / keyword / whether the bot is disabled.
 
-**若开了 tier-3, 再真打一通测试电话**(直接调插件脚本, 会真的响):
+**If tier-3 is enabled, place a real test call** (call the plugin script directly; it really rings):
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/cache/claude-idle-alert/claude-idle-alert/*}"/scripts/urgent_phone.sh "$PWD"
 ```
 
-让用户确认电话接到。报 `99991672 缺权限` → 那个权限没发布; 报别的 → 按 msg 排查。
+Have the user confirm they got the call. Reports `99991672 missing permission` → that permission isn't published; other errors → debug per the message.
 
-### 第 5 步: 收尾
+### Step 5: wrap up
 
-- 提醒 **Reload Window** (hook 在会话启动时加载; 自定义路径改了 env 也必须 reload)
-- 一句话默认行为: "要你拍板 → 立刻飞书; 停 2 分钟没回 → 提醒, 10 分钟 → 升级@, 20 分钟 → 打电话(若开了 tier-3)"
+- Remind to **Reload Window** (hooks load at session start; if you changed env for a custom path, you must reload too)
+- One-line default behavior: "needs your call → ping Feishu instantly; stops 2 min no reply → reminder, 10 min → escalation @, 20 min → phone call (if tier-3 enabled)"
 
-## 设计原则
+## Design principles
 
-- 密钥只落 `~/.claude/idle-alert/config.sh`, 永不入库/回显全文
-- 没配 webhook → 整套静默, 任意项目零副作用
-- 本 skill 只配置不改逻辑; 逻辑在插件 `scripts/`
+- Secrets only land in `~/.claude/idle-alert/config.sh`, never committed/echoed in full
+- No webhook configured → everything stays silent, zero side effects on any project
+- This skill only configures, it doesn't change logic; the logic lives in the plugin's `scripts/`

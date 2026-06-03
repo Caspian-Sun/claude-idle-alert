@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# decision.sh — 即时决策提醒 (Claude 当下需要你拍板时, 立刻发飞书)
+# decision.sh — instant decision alert (when Claude needs your call right now, ping Feishu immediately)
 #
-# 触发 (在 hooks/hooks.json 注册):
-#   - PreToolUse(AskUserQuestion|ExitPlanMode): Claude 要问你问题 / 计划待审批
-#     → 工具调用必走 PreToolUse, 任何环境都触发, 是最可靠的"需要你"信号。
-#   - Notification(permission_prompt): 权限弹窗 (终端环境额外覆盖; VSCode 插件环境
-#     此事件可能不触发, 故仅作补充, 主力是 PreToolUse)。
-# 与 watcher 的关系: 这个是"立刻响一声", watcher.sh 是"你没回再延时升级", 二者互补。
+# Triggers (registered in hooks/hooks.json):
+#   - PreToolUse(AskUserQuestion|ExitPlanMode): Claude wants to ask you / a plan is awaiting approval
+#     → tool calls always go through PreToolUse, fires in any environment, the most reliable "needs you" signal.
+#   - Notification(permission_prompt): permission prompt (extra coverage in terminal environments; in the VSCode
+#     extension this event may not fire, so it's only supplementary — PreToolUse is the workhorse).
+# Relation to the watcher: this one "rings right away", watcher.sh "escalates on a delay if you don't reply"; they complement each other.
 set -u
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -26,13 +26,13 @@ if command -v jq >/dev/null 2>&1 && [ -n "$payload" ]; then
 fi
 [ -n "$cwd" ] || cwd="$PWD"
 
-# 推断"为什么需要你" — 只发事件类型, 不发问题/计划内容 (安全默认)
-reason="需要你拍板"
+# Infer "why it needs you" — send only the event type, never the question/plan content (secure default)
+reason="needs your decision"
 case "$tool" in
-  AskUserQuestion) reason="在问你问题" ;;
-  ExitPlanMode)    reason="计划待审批" ;;
+  AskUserQuestion) reason="is asking you a question" ;;
+  ExitPlanMode)    reason="plan awaiting approval" ;;
 esac
-[ "$evt" = "Notification" ] && reason="权限/操作待批准"
+[ "$evt" = "Notification" ] && reason="permission/action awaiting approval"
 
 bash "$DIR/notify.sh" 0 "decision" "$cwd" 0 "$reason" || true
 exit 0
