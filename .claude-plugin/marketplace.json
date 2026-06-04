@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Marketplace for the Claude Code idle / decision alert plugin",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "plugins": [
     {
       "name": "claude-idle-alert",
       "source": "./",
       "description": "Claude decision alerts + idle watchdog: pings Feishu the moment Claude needs your call, escalates on a delay if you stop and nobody replies. Auto-wired on install, works in any project.",
-      "version": "1.0.6",
+      "version": "1.0.7",
       "author": {
         "name": "Caspian-Sun"
       },

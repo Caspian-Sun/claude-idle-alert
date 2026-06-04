@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # disarm.sh — idle-alert watchdog "disarm"
 #
-# Trigger: UserPromptSubmit (the user typed something = they're back, registered in hooks/hooks.json)
+# Trigger: UserPromptSubmit / PostToolUse (registered in hooks/hooks.json)
+#          = you typed something, or a tool completed (you answered the question / approved, and Claude resumed).
 # Purpose: delete this session's nonce file. A watcher still sleeping wakes up, finds the nonce mismatched,
 #          and gives up on escalating. This is the "feed the dog" action of the dead-man's switch.
 set -u

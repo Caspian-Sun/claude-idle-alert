@@ -39,10 +39,10 @@ When you step away and Claude pops a Yes/No or asks a question mid-run, it just 
 | Tier | When it fires | How |
 |------|---------------|-----|
 | **Instant** | Claude asks you / plan awaiting approval / permission prompt | Feishu text |
-| **Tier 1 / Tier 2** | 2 / 10 min with no reply after it stops | Feishu text / text + @mention |
+| **Tier 1 / Tier 2** | 2 / 10 min with no reply *while Claude is blocked on that decision* | Feishu text / text + @mention |
 | **Tier 3 (optional)** | Still no reply after 20 min | **Feishu phone call** (voice reads the message aloud), see below |
 
-> Signal sources: the instant layer relies on `PreToolUse(AskUserQuestion\|ExitPlanMode)` (fires in any environment) + `Notification(permission_prompt)`; the delayed layer arms on `Stop` → watchdog → escalates if you don't reply.
+> Signal sources: both layers fire on the same genuine "needs you" signals — `PreToolUse(AskUserQuestion\|ExitPlanMode)` (fires in any environment) + `Notification(permission_prompt)`. The instant layer pings right away; the delayed layer arms a watchdog on the same events and escalates if you don't respond. A plain `Stop` (Claude just finished a turn) does **not** arm anything, so normal completions never trigger an idle alert. Responding (answering the question / a tool completing / typing) disarms it.
 
 ---
 
@@ -71,16 +71,17 @@ To change the path: pick "custom directory" when running `/idle-alert`, or manua
 ## How it works (dead-man's switch)
 
 ```
-Stop / Notification ──► arm.sh ──► write per-session nonce + background watcher.sh
+PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt)
+   ├──► decision.sh ──► send Feishu immediately (instant layer)
+   └──► arm.sh ─────► write per-session nonce + background watcher.sh
                                         │ (sleep TIER1)
-User types UserPromptSubmit ─► disarm.sh ─► delete nonce
+You respond (PostToolUse / UserPromptSubmit) ─► disarm.sh ─► delete nonce
                                         ▼
-              watcher wakes: nonce still there and unchanged? ──no──► exit (user is back / re-armed)
+              watcher wakes: nonce still there and unchanged? ──no──► exit (you responded / re-armed)
                                         │yes → send tier 1, then sleep until TIER2
                           still armed? ──yes──► send tier-2 escalation (@you)
 
-PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt)
-                    └──► decision.sh ──► send Feishu immediately (instant layer)
+A plain Stop (Claude just finished a turn, nothing pending) arms nothing → no idle alert.
 ```
 
 - **Per-session**: the nonce is keyed by `session_id`, so multiple sessions don't interfere.

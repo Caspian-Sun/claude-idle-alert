@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # arm.sh — idle-alert watchdog "arm"
 #
-# Trigger: Stop / Notification (registered in hooks/hooks.json)
-# Purpose: when Claude stops / needs input, record a per-session nonce and spawn a watcher in the background.
-#          If the user replies within the TIER1/TIER2 window (UserPromptSubmit → disarm.sh),
+# Trigger: PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt) (registered in hooks/hooks.json)
+# Purpose: only when Claude is genuinely blocked waiting on your decision (asking a question / plan awaiting approval /
+#          permission prompt), record a per-session nonce and spawn a watcher in the background. A plain Stop (Claude just
+#          finished a turn) does NOT arm, so normal completions don't trigger idle alerts.
+#          If you respond within the TIER1/TIER2 window (PostToolUse / UserPromptSubmit → disarm.sh),
 #          the watcher wakes up, finds the nonce changed/deleted, and gives up without alerting.
 # Design: not configured (~/.claude/idle-alert/config.sh missing or WEBHOOK_URL empty) → silent exit 0, zero side effects.
 set -u
