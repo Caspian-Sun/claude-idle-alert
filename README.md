@@ -39,10 +39,10 @@ claude plugin install claude-idle-alert
 | 级别 | 何时响 | 方式 |
 |------|--------|------|
 | **即时** | Claude 问你 / 计划待审批 / 权限弹窗 | 飞书文本 |
-| **一级 / 二级** | 停下后你 2 / 10 分钟没回 | 飞书文本 / 文本 + @你 |
+| **一级 / 二级** | Claude *卡在这个决策上*、你 2 / 10 分钟没回 | 飞书文本 / 文本 + @你 |
 | **tier-3(可选)** | 20 分钟还没回 | **飞书打电话**(语音念消息),见下方 |
 
-> 信号来源:即时靠 `PreToolUse(AskUserQuestion\|ExitPlanMode)`(任何环境都触发)+ `Notification(permission_prompt)`;延时靠 `Stop` 布防 → 看门狗 → 你没回就升级。
+> 信号来源:两层都只在真正「需要你」的信号上触发 —— `PreToolUse(AskUserQuestion\|ExitPlanMode)`(任何环境都触发)+ `Notification(permission_prompt)`。即时层立刻发;延时层在同样的事件上布防看门狗,你不响应才升级。普通 `Stop`(Claude 只是答完一轮)**不布防任何东西**,所以正常结束绝不会误报空闲。你一响应(答完问题 / 工具完成 / 敲字)就撤防。
 
 ---
 
@@ -71,16 +71,17 @@ claude plugin install claude-idle-alert
 ## 工作原理 (dead-man's switch)
 
 ```
-Stop / Notification ──► arm.sh ──► 写 per-session nonce + 后台 watcher.sh
+PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt)
+   ├──► decision.sh ──► 立刻发飞书 (即时层)
+   └──► arm.sh ─────► 写 per-session nonce + 后台 watcher.sh
                                         │ (睡 TIER1)
-用户敲字 UserPromptSubmit ─► disarm.sh ─► 删 nonce
+你响应 (PostToolUse / UserPromptSubmit) ─► disarm.sh ─► 删 nonce
                                         ▼
-              watcher 醒来: nonce 还在且没变? ──否──► 退出 (人回来了/重新布防)
+              watcher 醒来: nonce 还在且没变? ──否──► 退出 (你已响应/重新布防)
                                         │是 → 发一级, 再睡到 TIER2
                           仍布防? ──是──► 发二级升级 (@你)
 
-PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt)
-                    └──► decision.sh ──► 立刻发飞书 (即时层)
+普通 Stop (Claude 只是答完一轮, 没东西待办) 不布防 → 不报空闲。
 ```
 
 - **per-session**:nonce 按 `session_id` 区分,多会话互不干扰。

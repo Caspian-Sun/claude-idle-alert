@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # arm.sh — idle-alert 看门狗「布防」
 #
-# 触发: Stop / Notification (在 hooks/hooks.json 注册)
-# 作用: Claude 停下 / 需要输入时, 记一个 per-session nonce 并在后台拉起一个 watcher。
-#       若用户在 TIER1/TIER2 时限内回复 (UserPromptSubmit → disarm.sh 撤防),
+# 触发: PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt) (在 hooks/hooks.json 注册)
+# 作用: 仅当 Claude 真的卡住等你拍板时 (问你问题 / 计划待审批 / 权限弹窗), 记一个 per-session nonce
+#       并在后台拉起一个 watcher。普通 Stop (Claude 只是答完一轮) 不布防, 所以正常结束不会误报空闲。
+#       若你在 TIER1/TIER2 时限内响应 (PostToolUse / UserPromptSubmit → disarm.sh 撤防),
 #       watcher 醒来发现 nonce 已变/已删, 自动放弃, 不发提醒。
 # 设计: 未配置 (~/.claude/idle-alert/config.sh 缺失或 WEBHOOK_URL 空) → 静默 exit 0, 零副作用。
 set -u
