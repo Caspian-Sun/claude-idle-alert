@@ -1,7 +1,7 @@
 {
   "name": "claude-idle-alert",
-  "version": "1.0.7",
-  "description": "Claude decision alerts + idle watchdog (dead-man's switch): pings Feishu the moment Claude needs your call, escalates on a delay if you stop and nobody replies. Works in any project, auto-wired on install, no settings.json changes.",
+  "version": "1.0.8",
+  "description": "Claude decision alerts + idle watchdog (dead-man's switch): pings Feishu / DingTalk the moment Claude needs your call, escalates on a delay if you stop and nobody replies. Works in any project, auto-wired on install, no settings.json changes.",
   "author": {
     "name": "Caspian-Sun"
   },
