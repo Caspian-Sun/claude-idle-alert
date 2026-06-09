@@ -53,9 +53,16 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 | `AT_OPEN_ID` | 升级时 @ 的飞书 open_id (ou_xxx), 可空 | 空 |
 | `KEYWORD` | 飞书自定义关键词 (消息须含) | Claude |
 
-> 拿飞书 webhook: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
+> **拿飞书 webhook**: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
 >
-> 拿钉钉 webhook: 钉钉群 → 群设置 → 机器人和集成 → 创建自定义机器人 → 复制 webhook。
+> **拿钉钉 webhook** (推荐流程):
+>   1. 创建一个钉钉「团队」(如无)
+>   2. 在团队内建一个「群」(仅自己用, 如「我的提醒」)
+>   3. 群内 → 群设置 → 机器人和集成 → 创建「自定义机器人」→ 复制 webhook
+>
+> **功能对比**:
+> - **飞书**: webhook (tier 0-2) + 可选电话加急 (tier 3, 需自建应用)
+> - **钉钉**: webhook (tier 0-2) 仅,暂不支持电话加急
 
 ### 第 2.5 步: (可选) tier-3 加急电话
 
