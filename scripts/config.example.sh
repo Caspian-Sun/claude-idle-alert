@@ -4,13 +4,23 @@
 #       它会逐项问你并自动写好 ~/.claude/idle-alert/config.sh。
 #
 # 为什么真实配置放 ~/.claude (而不是插件目录或某个项目):
-#   WEBHOOK_URL 是密钥, 绝不入库。本模板不含密钥, 随插件分发当样例。
+#   Webhook 是密钥, 绝不入库。本模板不含密钥, 随插件分发当样例。
 #   每个人的真实 webhook/阈值是个人本地配置, 放 ~/.claude/idle-alert/config.sh,
 #   对所有项目通用 (插件在任意项目运行时都读这一份)。
 
-# 飞书自定义机器人 webhook (必填)。
-# 留空 → 整套 idle-alert 静默不工作, 对任何项目零副作用。
+# ───────── 飞书 ─────────
+# 启用飞书通知 (true/false)
+FEISHU_ENABLED=false
+
+# 飞书自定义机器人 webhook (仅在 FEISHU_ENABLED=true 时使用)
 WEBHOOK_URL=""
+
+# ───────── 钉钉 ─────────
+# 启用钉钉通知 (true/false)
+DINGTALK_ENABLED=false
+
+# 钉钉自定义机器人 webhook (仅在 DINGTALK_ENABLED=true 时使用)
+DINGTALK_WEBHOOK_URL=""
 
 # 空闲多少「秒」后发一级提醒 (默认 120 = 2 分钟)。
 # 设 0 = Claude 一停下就立刻发 (会比较吵, 适合你大部分时间不在电脑前)。

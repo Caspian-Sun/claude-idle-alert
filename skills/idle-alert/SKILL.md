@@ -1,6 +1,6 @@
 ---
 name: idle-alert
-description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude 要你拍板 (问问题/计划待审批/权限弹窗) 立刻飞书; 停下没人回则延时升级 @你; 可选 tier-3 飞书电话语音。用户说「配置空闲提醒 / 设置离开提醒 / 人不在时通知我 / 看门狗提醒 / idle alert / dead man switch / 配一下飞书提醒 / 配飞书打电话提醒」时触发。本 skill 收集 webhook(及可选电话凭据) + 自检; 运行时机制由插件 hooks 自动接线 (装插件即生效, 不改 settings.json)。
+description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude 要你拍板 (问问题/计划待审批/权限弹窗) 立刻飞书/钉钉; 停下没人回则延时升级 @你; 可选 tier-3 飞书电话语音。用户说「配置空闲提醒 / 设置离开提醒 / 人不在时通知我 / 看门狗提醒 / idle alert / dead man switch / 配一下飞书提醒 / 配飞书打电话提醒 / 配钉钉提醒」时触发。本 skill 收集 webhook(及可选电话凭据) + 自检; 运行时机制由插件 hooks 自动接线 (装插件即生效, 不改 settings.json)。
 ---
 
 # idle-alert — 提醒配置向导
@@ -10,9 +10,9 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 **不需要改任何项目的 settings.json**。本 skill 只做: **收集配置 → 写本地配置文件 → 自检**。
 
 > 覆盖:
-> - **即时**: Claude 问你问题 / 计划待审批 / 权限弹窗 → 立刻飞书
+> - **即时**: Claude 问你问题 / 计划待审批 / 权限弹窗 → 立刻飞书/钉钉
 > - **延时**: Claude 停下没人回 → 2 分钟提醒, 10 分钟升级 @你
-> - **可选 tier-3**: 20 分钟还没回 → 飞书电话语音 (需企业自建应用)
+> - **可选 tier-3**: 20 分钟还没回 → 飞书电话语音 (仅飞书支持, 需自建应用)
 
 ## 职责边界
 
@@ -40,17 +40,22 @@ description: 配置 Claude Code 空闲/决策提醒 (dead-man's switch)。Claude
 
 ### 第 2 步: 收集配置
 
-一句话说明配什么 (即时飞书 + 延时升级), 然后问 (有默认给默认):
+一句话说明配什么 (即时飞书/钉钉 + 延时升级), 然后问 (有默认给默认):
 
 | 配置项 | 说明 | 默认 |
 |--------|------|------|
-| `WEBHOOK_URL` | 飞书自定义机器人 webhook (必填) | 无 |
+| `FEISHU_ENABLED` | 启用飞书通知 (true/false, 至少一个为 true) | false |
+| `WEBHOOK_URL` | 飞书自定义机器人 webhook (仅 FEISHU_ENABLED=true 时使用) | 无 |
+| `DINGTALK_ENABLED` | 启用钉钉通知 (true/false, 至少一个为 true) | false |
+| `DINGTALK_WEBHOOK_URL` | 钉钉自定义机器人 webhook (仅 DINGTALK_ENABLED=true 时使用) | 无 |
 | `TIER1_DELAY` | 空闲多少秒发一级提醒 | 120 |
 | `TIER2_DELAY` | 空闲多少秒升级 (须 > TIER1) | 600 |
 | `AT_OPEN_ID` | 升级时 @ 的飞书 open_id (ou_xxx), 可空 | 空 |
 | `KEYWORD` | 飞书自定义关键词 (消息须含) | Claude |
 
-> 拿 webhook: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
+> 拿飞书 webhook: 飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 复制 webhook。
+>
+> 拿钉钉 webhook: 钉钉群 → 群设置 → 机器人和集成 → 创建自定义机器人 → 复制 webhook。
 
 ### 第 2.5 步: (可选) tier-3 加急电话
 
@@ -81,16 +86,28 @@ curl -s -X POST "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id?
 `mkdir -p "$(dirname <CFG>)"`, 把值写到 `<CFG>` (格式见插件内 `scripts/config.example.sh`),
 写完 `chmod 600`。若开了 tier-3, 一并写入 `LARK_APP_ID/LARK_APP_SECRET/LARK_USER_OPEN_ID/TIER3_DELAY`。
 **绝不**回显 webhook / app_secret 全文 (可只显尾部 4 位确认)。
+至少 `FEISHU_ENABLED` 或 `DINGTALK_ENABLED` 之一须为 true (两个都是 false 会整套静默)。
 
 ### 第 4 步: 发测试消息自检 (直接 curl, 不依赖插件路径)
 
 ```bash
 source <CFG>
-curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' \
-  -d "$(jq -nc --arg t "🔔 ${KEYWORD:-Claude} idle-alert 测试 — 配置成功, 提醒已就绪" '{msg_type:"text",content:{text:$t}}')"
+test_msg="🔔 ${KEYWORD:-Claude} idle-alert 测试 — 配置成功, 提醒已就绪"
+
+# 测试飞书 webhook (若启用)
+if [ "${FEISHU_ENABLED:-false}" = "true" ] && [ -n "${WEBHOOK_URL:-}" ]; then
+  curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg t "$test_msg" '{msg_type:"text",content:{text:$t}}')"
+fi
+
+# 测试钉钉 webhook (若启用)
+if [ "${DINGTALK_ENABLED:-false}" = "true" ] && [ -n "${DINGTALK_WEBHOOK_URL:-}" ]; then
+  curl -s -X POST "$DINGTALK_WEBHOOK_URL" -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg t "$test_msg" '{msgtype:"text",text:{content:$t}}')"
+fi
 ```
 
-让用户去飞书群确认收到。没收到 → 排查 webhook / 关键词 / 机器人是否被禁。
+让用户分别去飞书群 (若启用) 和钉钉群 (若启用) 确认收到。没收到 → 排查 webhook / 关键词 / 机器人是否被禁 / 服务是否启用。
 
 **若开了 tier-3, 再真打一通测试电话**(直接调插件脚本, 会真的响):
 
@@ -103,10 +120,11 @@ bash "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/cache/claude-idle-alert/claude
 ### 第 5 步: 收尾
 
 - 提醒 **Reload Window** (hook 在会话启动时加载; 自定义路径改了 env 也必须 reload)
-- 一句话默认行为: "要你拍板 → 立刻飞书; 停 2 分钟没回 → 提醒, 10 分钟 → 升级@, 20 分钟 → 打电话(若开了 tier-3)"
+- 一句话默认行为: "要你拍板 → 立刻飞书/钉钉; 停 2 分钟没回 → 提醒, 10 分钟 → 升级@, 20 分钟 → 打电话(仅飞书, 若开了 tier-3)"
 
 ## 设计原则
 
 - 密钥只落 `~/.claude/idle-alert/config.sh`, 永不入库/回显全文
-- 没配 webhook → 整套静默, 任意项目零副作用
+- 两个服务都禁用 (FEISHU_ENABLED=false 和 DINGTALK_ENABLED=false) → 整套静默, 任意项目零副作用
+- 至少一个服务须启用才能生效
 - 本 skill 只配置不改逻辑; 逻辑在插件 `scripts/`

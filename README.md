@@ -5,9 +5,9 @@
 
 # claude-idle-alert
 
-**📞 离座太久、Claude 卡住等你?先飞书发消息,再 @你,20 分钟还没回 —— 直接打电话念给你听。**
+**📞 离座太久、Claude 卡住等你?先飞书/钉钉发消息,再 @你,20 分钟还没回 —— 直接打电话念给你听。**
 
-> Claude Code **离座提醒**插件:需要你拍板时**立刻**飞书提醒,停下没人回则**延时升级**,还能**打电话叫你**。
+> Claude Code **离座提醒**插件:需要你拍板时**立刻**飞书/钉钉提醒,停下没人回则**延时升级**,还能**打电话叫你**。
 > 装一次,**任意项目**生效,**不改任何 settings.json**。
 
 ## 快速开始(4 步,装完就能用)
@@ -19,12 +19,12 @@ claude plugin marketplace add https://github.com/Caspian-Sun/claude-idle-alert.g
 # 2. 安装插件 (hooks 自动接线, 不碰你项目的 settings.json)
 claude plugin install claude-idle-alert
 
-# 3. 在 Claude Code 里输入 /idle-alert, 按问答填飞书 webhook (要打电话就跟着配 tier-3)
+# 3. 在 Claude Code 里输入 /idle-alert, 按问答填飞书/钉钉 webhook (要打电话就跟着配 tier-3)
 
 # 4. Reload Window
 ```
 
-就这 4 步。配置只问你飞书 webhook,运行机制插件自动接好。
+就这 4 步。配置只问你 webhook,运行机制插件自动接好。
 
 > 前置:`jq` + `curl`(macOS/Linux 一般自带;缺 jq 就 `brew install jq`)。
 > 更新:`claude plugin marketplace update claude-idle-alert && claude plugin install claude-idle-alert`
@@ -38,8 +38,8 @@ claude plugin install claude-idle-alert
 
 | 级别 | 何时响 | 方式 |
 |------|--------|------|
-| **即时** | Claude 问你 / 计划待审批 / 权限弹窗 | 飞书文本 |
-| **一级 / 二级** | Claude *卡在这个决策上*、你 2 / 10 分钟没回 | 飞书文本 / 文本 + @你 |
+| **即时** | Claude 问你 / 计划待审批 / 权限弹窗 | 飞书 + 钉钉文本 (按配置) |
+| **一级 / 二级** | Claude *卡在这个决策上*、你 2 / 10 分钟没回 | 飞书 + 钉钉文本 / 文本 + @你 |
 | **tier-3(可选)** | 20 分钟还没回 | **飞书打电话**(语音念消息),见下方 |
 
 > 信号来源:两层都只在真正「需要你」的信号上触发 —— `PreToolUse(AskUserQuestion\|ExitPlanMode)`(任何环境都触发)+ `Notification(permission_prompt)`。即时层立刻发;延时层在同样的事件上布防看门狗,你不响应才升级。普通 `Stop`(Claude 只是答完一轮)**不布防任何东西**,所以正常结束绝不会误报空闲。你一响应(答完问题 / 工具完成 / 敲字)就撤防。
@@ -53,13 +53,17 @@ claude plugin install claude-idle-alert
 
 | 项 | 说明 | 默认 |
 |----|------|------|
-| `WEBHOOK_URL` | 飞书自定义机器人 webhook(必填,**留空 = 整套静默**) | 无 |
+| `FEISHU_ENABLED` | 启用飞书通知 (true/false, **至少一个为 true**) | false |
+| `WEBHOOK_URL` | 飞书自定义机器人 webhook (仅 FEISHU_ENABLED=true 时使用) | 无 |
+| `DINGTALK_ENABLED` | 启用钉钉通知 (true/false, **至少一个为 true**) | false |
+| `DINGTALK_WEBHOOK_URL` | 钉钉自定义机器人 webhook (仅 DINGTALK_ENABLED=true 时使用) | 无 |
 | `TIER1_DELAY` | 空闲多少秒发一级提醒 | 120 |
 | `TIER2_DELAY` | 空闲多少秒升级(须 > TIER1) | 600 |
 | `AT_OPEN_ID` | 升级时 @ 的飞书 open_id(可空) | 空 |
 | `KEYWORD` | 飞书自定义关键词(消息须含) | Claude |
 
-**没配 webhook → 全程静默 `exit 0`,零副作用** —— 所以装了不配也不会打扰任何人。
+**两个服务都禁用 → 全程静默 `exit 0`,零副作用** —— 所以装了不配也不会打扰任何人。
+至少一个服务 (设 `FEISHU_ENABLED=true` 或 `DINGTALK_ENABLED=true`) 须启用才能生效。
 装了还没配时,每次开会话(每天一次)会**主动提醒**你去跑 `/idle-alert`(SessionStart 检测)。
 
 **自定义配置位置**:默认 `~/.claude/idle-alert/config.sh`(和安装目录分离,升级不丢)。
@@ -72,7 +76,7 @@ claude plugin install claude-idle-alert
 
 ```
 PreToolUse(AskUserQuestion|ExitPlanMode) / Notification(permission_prompt)
-   ├──► decision.sh ──► 立刻发飞书 (即时层)
+   ├──► decision.sh ──► 立刻发飞书/钉钉 (即时层)
    └──► arm.sh ─────► 写 per-session nonce + 后台 watcher.sh
                                         │ (睡 TIER1)
 你响应 (PostToolUse / UserPromptSubmit) ─► disarm.sh ─► 删 nonce
@@ -135,7 +139,8 @@ claude-idle-alert/
 ## 路线图
 
 - [x] tier-3 加急电话(飞书自建应用 `urgent_phone`)
-- [ ] 多渠道(钉钉 / 企微 / Telegram / Bark)—— 改 `notify.sh` 的 payload 即可
+- [x] 钉钉支持 —— 同时支持飞书和钉钉 webhook
+- [ ] 多渠道(企微 / Telegram / Bark)—— 改 `notify.sh` 的 payload 即可
 
 ## License
 

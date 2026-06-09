@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# notify.sh — idle-alert 通知发送器 (飞书自定义机器人 webhook)
+# notify.sh — idle-alert 通知发送器 (飞书 + 钉钉自定义机器人 webhook)
 #
 # 参数: $1=tier(0|1|2)  $2=session_id  $3=cwd  $4=elapsed_seconds  $5=reason(仅 tier0)
 #   tier 0 = 即时决策提醒 (decision.sh 调)  1 = 空闲一级  2 = 空闲二级升级
@@ -15,7 +15,11 @@ CONFIG="${CLAUDE_IDLE_CONFIG:-$HOME/.claude/idle-alert/config.sh}"
 [ -f "$CONFIG" ] || exit 0
 # shellcheck disable=SC1090
 . "$CONFIG" 2>/dev/null || exit 0
-[ -n "${WEBHOOK_URL:-}" ] || exit 0
+
+feishu_on="${FEISHU_ENABLED:-false}"
+dingtalk_on="${DINGTALK_ENABLED:-false}"
+[ "$feishu_on" = "true" ] || [ "$dingtalk_on" = "true" ] || exit 0
+
 command -v jq   >/dev/null 2>&1 || exit 0
 command -v curl >/dev/null 2>&1 || exit 0
 
@@ -35,8 +39,17 @@ case "$tier" in
   *) text="🔔 ${kw} 空闲 ${mins} 分钟未响应 — 项目【${proj}】可能在等你点 Yes/No。" ;;
 esac
 
-body="$(jq -nc --arg t "$text" '{msg_type:"text",content:{text:$t}}')"
-curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' -d "$body" >/dev/null 2>&1 || true
+# Send to Feishu
+if [ "$feishu_on" = "true" ] && [ -n "${WEBHOOK_URL:-}" ]; then
+  body="$(jq -nc --arg t "$text" '{msg_type:"text",content:{text:$t}}')"
+  curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' -d "$body" >/dev/null 2>&1 || true
+fi
+
+# Send to DingTalk
+if [ "$dingtalk_on" = "true" ] && [ -n "${DINGTALK_WEBHOOK_URL:-}" ]; then
+  body="$(jq -nc --arg t "$text" '{msgtype:"text",text:{content:$t}}')"
+  curl -s -X POST "$DINGTALK_WEBHOOK_URL" -H 'Content-Type: application/json' -d "$body" >/dev/null 2>&1 || true
+fi
 
 # ── tier-3 扩展点 (默认关闭) ──
 # if [ "$tier" = "2" ] && [ -n "${LARK_APP_ID:-}" ] && [ -n "${LARK_USER_ID:-}" ]; then
