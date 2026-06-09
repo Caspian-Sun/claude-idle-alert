@@ -1,114 +1,118 @@
-# Claude Code 官方插件提交文档
+# Claude Code Plugin Submission Document
 
-## 插件信息
+## Plugin Information
 
-- **插件名称**: claude-idle-alert
-- **GitHub 仓库**: https://github.com/Caspian-Sun/claude-idle-alert
-- **当前版本**: 1.0.8
-- **作者**: Caspian-Sun
-- **许可证**: MIT
+- **Plugin Name**: claude-idle-alert
+- **GitHub Repository**: https://github.com/Caspian-Sun/claude-idle-alert
+- **Current Version**: 1.0.8
+- **Author**: Caspian-Sun
+- **License**: MIT
 
-## 插件描述
+## Overview
 
-Claude Code **离座/空闲提醒插件** (dead-man's switch)：
+Claude Code **away-from-keyboard alert plugin** (dead-man's switch). When Claude needs your decision (asking a question, awaiting plan approval, or permission prompt), it immediately notifies you via **Feishu or DingTalk**. If you don't respond within 2/10 minutes, it escalates the reminder. Optional tier-3 feature supports Feishu phone urgency for critical notifications.
 
-当 Claude 需要你拍板时（提问、计划待审批、权限弹窗），立刻通过 **Feishu / DingTalk** 提醒你。如果你没有及时回应，会在 2 分钟/10 分钟时分级提醒。可选的 tier-3 功能支持 Feishu 电话语音加急通知。
+## Core Features
 
-## 核心功能
+✅ **Tier 0-2: Text Notifications**
+- Instant: Immediate notification when Claude needs your decision
+- Tier 1: Reminder after 2 minutes of inactivity
+- Tier 2: Escalation with @mention after 10 minutes
 
-✅ **Tier 0-2：文本通知**
-- 即时通知：Claude 需要你决策时立刻发送
-- 一级提醒：2 分钟无回应时提醒
-- 二级升级：10 分钟无回应时 @你
+✅ **Tier 3: Feishu Phone Urgency** (Optional)
+- Automatic phone call after 20 minutes of inactivity
+- Requires Feishu custom app setup
 
-✅ **Tier 3：Feishu 电话语音**（可选）
-- 20 分钟无回应时自动打电话
-- 需 Feishu 自建应用
+✅ **Multi-Channel Support**
+- Feishu: webhook + phone urgency
+- DingTalk: webhook only
 
-✅ **多通道支持**
-- Feishu（飞书）：webhook + 电话
-- DingTalk（钉钉）：webhook
+✅ **Zero-Config Installation**
+- Auto-wired hooks on install
+- No settings.json modifications needed
+- Works across all projects with single configuration
 
-✅ **开箱即用**
-- 安装后自动接线，无需修改任何 settings.json
-- 支持所有项目，一次配置全局生效
+## Technical Details
 
-## 技术指标
+| Aspect | Details |
+|--------|---------|
+| Language | Bash Shell Script |
+| Size | ~10KB core code |
+| Dependencies | jq, curl (standard tools) |
+| Compatibility | macOS, Linux |
+| Installation | Claude Code Plugin Marketplace |
 
-| 指标 | 详情 |
-|------|------|
-| 语言 | Bash Shell Script |
-| 大小 | ~10KB 核心代码 |
-| 依赖 | jq, curl (标准工具) |
-| 兼容性 | macOS, Linux |
-| 安装方式 | Claude Code Plugin Marketplace |
+## Submission Checklist
 
-## 提交清单
+### Code Quality
+- ✅ Syntax validation passed
+- ✅ SemVer versioning standard
+- ✅ Comprehensive comments and documentation
+- ✅ Security: No credentials stored in code
+- ✅ MIT License
 
-### 代码质量
-- ✅ 语法检查通过
-- ✅ 版本管理规范（SemVer）
-- ✅ 完整的注释和文档
-- ✅ 安全考虑（不存储密钥到代码）
-- ✅ MIT 许可证
+### Documentation Completeness
+- ✅ README.md (English main branch)
+- ✅ README.md (Chinese zh branch)
+- ✅ RELEASE.md (Release process & versioning)
+- ✅ SKILL.md (Configuration wizard guide)
+- ✅ plugin.json (Complete metadata)
 
-### 文档完整性
-- ✅ README.md（英文）
-- ✅ README.md（中文，zh 分支）
-- ✅ RELEASE.md（发布流程）
-- ✅ SKILL.md（配置向导）
-- ✅ plugin.json（插件元数据）
+### Feature Completeness
+- ✅ Feishu webhook notifications
+- ✅ DingTalk webhook notifications
+- ✅ Feishu phone urgency (tier-3)
+- ✅ Interactive configuration wizard (/idle-alert skill)
+- ✅ Automated release script (./scripts/release.sh)
+- ✅ Configuration migration tool
 
-### 功能完整性
-- ✅ Feishu webhook 通知
-- ✅ DingTalk webhook 通知
-- ✅ Feishu 电话加急通知（tier-3）
-- ✅ 配置向导（/idle-alert skill）
-- ✅ 自动化发布脚本
-- ✅ 配置迁移工具
+### User Experience
+- ✅ 4-step quick start
+- ✅ No settings.json modifications required
+- ✅ Automatic configuration backup
+- ✅ Colored CLI output
+- ✅ Complete troubleshooting guide
 
-### 用户体验
-- ✅ 4 步快速开始
-- ✅ 无需修改 settings.json
-- ✅ 自动备份配置
-- ✅ 彩色命令行输出
-- ✅ 完整的故障排查指南
-
-## 安装方式
+## Installation Instructions
 
 ```bash
-# 用户可以这样安装：
+# Users can install with:
 claude plugin marketplace add https://github.com/Caspian-Sun/claude-idle-alert.git
 claude plugin install claude-idle-alert
 ```
 
-## 开发工具链
+After installation, run `/idle-alert` for interactive configuration.
 
-- 版本控制：Git + GitHub
-- CI/CD：自动化发布脚本（./scripts/release.sh）
-- 测试：手动配置向导测试
-- 文档：Markdown（README, RELEASE, SKILL）
+## Development Workflow
 
-## 使用统计（预期）
+- **Version Control**: Git + GitHub
+- **Release Automation**: ./scripts/release.sh (one-command releases)
+- **Testing**: Interactive skill testing + manual verification
+- **Documentation**: Markdown (README, RELEASE, SKILL)
+- **Internationalization**: English (main) + Chinese (zh branch)
 
-- 目标用户：需要离座提醒的 Claude Code 用户
-- 支持语言：English (main branch) + 中文 (zh branch)
-- 更新频率：根据用户反馈定期迭代
+## Expected Impact
 
-## 后续维护
+- **Target Users**: Claude Code users needing away-from-keyboard notifications
+- **Internationalization**: Bilingual support (English + Chinese)
+- **Update Frequency**: Regular iterations based on user feedback
+- **Community**: Open source with active issue tracking
 
-- 定期更新 Feishu/DingTalk API
-- 添加更多通知渠道（WeCom, Telegram, Bark）
-- 收集用户反馈改进 UX
-- 安全更新和 bug 修复
+## Future Roadmap
 
-## 联系信息
+- Regular updates to Feishu/DingTalk APIs
+- Additional notification channels (WeCom, Telegram, Bark)
+- User feedback integration and UX improvements
+- Security updates and bug fixes
 
-- **GitHub Issues**: https://github.com/Caspian-Sun/claude-idle-alert/issues
-- **Repository**: https://github.com/Caspian-Sun/claude-idle-alert
+## Contact & Resources
+
+- **GitHub Repository**: https://github.com/Caspian-Sun/claude-idle-alert
+- **Issues & Support**: https://github.com/Caspian-Sun/claude-idle-alert/issues
+- **Documentation**: Complete bilingual docs in repository
 
 ---
 
-**提交时间**: 2026-06-09  
-**提交人**: Caspian-Sun  
-**准备状态**: ✅ 完整，可提交
+**Submission Date**: June 9, 2026  
+**Author**: Caspian-Sun  
+**Status**: ✅ Production Ready - Complete and ready for submission
