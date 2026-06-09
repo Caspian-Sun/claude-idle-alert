@@ -40,7 +40,9 @@ When you step away and Claude pops a Yes/No or asks a question mid-run, it just 
 |------|---------------|-----|
 | **Instant** | Claude asks you / plan awaiting approval / permission prompt | Feishu + DingTalk text (both if configured) |
 | **Tier 1 / Tier 2** | 2 / 10 min with no reply *while Claude is blocked on that decision* | Feishu + DingTalk text / text + @mention |
-| **Tier 3 (optional)** | Still no reply after 20 min | **Feishu phone call** (voice reads the message aloud), see below |
+| **Tier 3 (optional)** | Still no reply after 20 min | **Feishu phone call only** (voice reads the message aloud), see below |
+
+> **Note**: DingTalk currently supports only webhook text notifications (tier 0-2). Feishu supports both webhooks (tier 0-2) and optional phone urgency (tier 3).
 
 > Signal sources: both layers fire on the same genuine "needs you" signals — `PreToolUse(AskUserQuestion\|ExitPlanMode)` (fires in any environment) + `Notification(permission_prompt)`. The instant layer pings right away; the delayed layer arms a watchdog on the same events and escalates if you don't respond. A plain `Stop` (Claude just finished a turn) does **not** arm anything, so normal completions never trigger an idle alert. Responding (answering the question / a tool completing / typing) disarms it.
 

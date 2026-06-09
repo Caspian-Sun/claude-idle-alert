@@ -53,9 +53,16 @@ Explain in one line what's being configured (instant Feishu / DingTalk + delayed
 | `AT_OPEN_ID` | Feishu open_id (ou_xxx) to @ on escalation, optional | empty |
 | `KEYWORD` | Feishu custom keyword (must appear in the message) | Claude |
 
-> Get Feishu webhook: Feishu group → Settings → Group Bots → Add a "Custom Bot" → copy the webhook.
+> **Get Feishu webhook**: Feishu group → Settings → Group Bots → Add a "Custom Bot" → copy the webhook.
 > 
-> Get DingTalk webhook: DingTalk group → Group Settings → Robots & Integrations → Create a Custom Robot → copy the webhook.
+> **Get DingTalk webhook**: Recommended workflow:
+>   1. Create a DingTalk team (if you haven't)
+>   2. Create a group within the team (for yourself only, e.g., "my-alerts")
+>   3. In the group → Group Settings → Robots & Integrations → Create a "Custom Robot" → copy the webhook
+> 
+> **Capability differences**:
+> - **Feishu**: webhooks (tier 0-2) + optional phone urgency (tier 3 with custom app)
+> - **DingTalk**: webhooks (tier 0-2) only, no phone urgency support
 
 ### Step 2.5: (optional) tier-3 urgent phone call
 
