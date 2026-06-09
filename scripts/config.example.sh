@@ -4,13 +4,23 @@
 #        which asks you item by item and writes ~/.claude/idle-alert/config.sh for you.
 #
 # Why the real config lives in ~/.claude (not the plugin dir or a project):
-#   WEBHOOK_URL is a secret, never committed. This template holds no secret and ships with the plugin as a sample.
-#   Everyone's real webhook/thresholds are personal local config, kept in ~/.claude/idle-alert/config.sh,
+#   Webhooks are secrets, never committed. This template holds no secret and ships with the plugin as a sample.
+#   Everyone's real webhooks/thresholds are personal local config, kept in ~/.claude/idle-alert/config.sh,
 #   shared across all projects (the plugin reads this single file no matter which project it runs in).
 
-# Feishu custom-bot webhook (required).
-# Empty → the whole idle-alert stays silent and does nothing, with zero side effects on any project.
+# ───────── Feishu ─────────
+# Enable Feishu notifications (true/false)
+FEISHU_ENABLED=false
+
+# Feishu custom-bot webhook (only used if FEISHU_ENABLED=true)
 WEBHOOK_URL=""
+
+# ───────── DingTalk ─────────
+# Enable DingTalk notifications (true/false)
+DINGTALK_ENABLED=false
+
+# DingTalk custom-bot webhook (only used if DINGTALK_ENABLED=true)
+DINGTALK_WEBHOOK_URL=""
 
 # How many "seconds" idle before the tier-1 alert (default 120 = 2 minutes).
 # Set 0 = fire the instant Claude stops (noisier; good if you're away from the computer most of the time).

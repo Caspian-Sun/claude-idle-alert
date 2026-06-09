@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# notify.sh — idle-alert notification sender (Feishu custom-bot webhook)
+# notify.sh — idle-alert notification sender (Feishu + DingTalk custom-bot webhooks)
 #
 # Args: $1=tier(0|1|2)  $2=session_id  $3=cwd  $4=elapsed_seconds  $5=reason(tier0 only)
 #   tier 0 = instant decision alert (called by decision.sh)  1 = idle tier-1  2 = idle tier-2 escalation
@@ -15,7 +15,11 @@ CONFIG="${CLAUDE_IDLE_CONFIG:-$HOME/.claude/idle-alert/config.sh}"
 [ -f "$CONFIG" ] || exit 0
 # shellcheck disable=SC1090
 . "$CONFIG" 2>/dev/null || exit 0
-[ -n "${WEBHOOK_URL:-}" ] || exit 0
+
+feishu_on="${FEISHU_ENABLED:-false}"
+dingtalk_on="${DINGTALK_ENABLED:-false}"
+[ "$feishu_on" = "true" ] || [ "$dingtalk_on" = "true" ] || exit 0
+
 command -v jq   >/dev/null 2>&1 || exit 0
 command -v curl >/dev/null 2>&1 || exit 0
 
@@ -35,8 +39,17 @@ case "$tier" in
   *) text="🔔 ${kw} idle ${mins} min with no response — project [${proj}] may be waiting for you to click Yes/No." ;;
 esac
 
-body="$(jq -nc --arg t "$text" '{msg_type:"text",content:{text:$t}}')"
-curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' -d "$body" >/dev/null 2>&1 || true
+# Send to Feishu
+if [ "$feishu_on" = "true" ] && [ -n "${WEBHOOK_URL:-}" ]; then
+  body="$(jq -nc --arg t "$text" '{msg_type:"text",content:{text:$t}}')"
+  curl -s -X POST "$WEBHOOK_URL" -H 'Content-Type: application/json' -d "$body" >/dev/null 2>&1 || true
+fi
+
+# Send to DingTalk
+if [ "$dingtalk_on" = "true" ] && [ -n "${DINGTALK_WEBHOOK_URL:-}" ]; then
+  body="$(jq -nc --arg t "$text" '{msgtype:"text",text:{content:$t}}')"
+  curl -s -X POST "$DINGTALK_WEBHOOK_URL" -H 'Content-Type: application/json' -d "$body" >/dev/null 2>&1 || true
+fi
 
 # ── tier-3 extension point (off by default) ──
 # if [ "$tier" = "2" ] && [ -n "${LARK_APP_ID:-}" ] && [ -n "${LARK_USER_ID:-}" ]; then

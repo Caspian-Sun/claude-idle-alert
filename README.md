@@ -5,9 +5,9 @@
 
 # claude-idle-alert
 
-**📞 Away too long while Claude waits on you? It pings Feishu first, then @-mentions you, and if there's still no reply after 20 minutes — it calls your phone and reads the message aloud.**
+**📞 Away too long while Claude waits on you? It pings Feishu / DingTalk first, then @-mentions you, and if there's still no reply after 20 minutes — it calls your phone and reads the message aloud.**
 
-> A Claude Code **away-from-keyboard alert** plugin: when Claude needs your decision it pings Feishu **instantly**; if it stops and nobody replies it **escalates on a delay**, and can even **call your phone**.
+> A Claude Code **away-from-keyboard alert** plugin: when Claude needs your decision it pings Feishu / DingTalk **instantly**; if it stops and nobody replies it **escalates on a delay**, and can even **call your phone**.
 > Install once, works in **every project**, **without touching any settings.json**.
 
 ## Quick start (4 steps, usable right after install)
@@ -19,12 +19,12 @@ claude plugin marketplace add https://github.com/Caspian-Sun/claude-idle-alert.g
 # 2. Install the plugin (hooks are wired up automatically; your project's settings.json is untouched)
 claude plugin install claude-idle-alert
 
-# 3. In Claude Code, type /idle-alert and follow the prompts to fill in your Feishu webhook (configure tier-3 too if you want phone calls)
+# 3. In Claude Code, type /idle-alert and follow the prompts to fill in your Feishu / DingTalk webhooks (configure tier-3 too if you want phone calls)
 
 # 4. Reload Window
 ```
 
-That's all 4 steps. Configuration only asks for your Feishu webhook; the plugin wires up the runtime mechanics itself.
+That's all 4 steps. Configuration only asks for your webhooks; the plugin wires up the runtime mechanics itself.
 
 > Prerequisites: `jq` + `curl` (usually preinstalled on macOS/Linux; if `jq` is missing, run `brew install jq`).
 > Update: `claude plugin marketplace update claude-idle-alert && claude plugin install claude-idle-alert`
@@ -38,8 +38,8 @@ When you step away and Claude pops a Yes/No or asks a question mid-run, it just 
 
 | Tier | When it fires | How |
 |------|---------------|-----|
-| **Instant** | Claude asks you / plan awaiting approval / permission prompt | Feishu text |
-| **Tier 1 / Tier 2** | 2 / 10 min with no reply *while Claude is blocked on that decision* | Feishu text / text + @mention |
+| **Instant** | Claude asks you / plan awaiting approval / permission prompt | Feishu + DingTalk text (both if configured) |
+| **Tier 1 / Tier 2** | 2 / 10 min with no reply *while Claude is blocked on that decision* | Feishu + DingTalk text / text + @mention |
 | **Tier 3 (optional)** | Still no reply after 20 min | **Feishu phone call** (voice reads the message aloud), see below |
 
 > Signal sources: both layers fire on the same genuine "needs you" signals — `PreToolUse(AskUserQuestion\|ExitPlanMode)` (fires in any environment) + `Notification(permission_prompt)`. The instant layer pings right away; the delayed layer arms a watchdog on the same events and escalates if you don't respond. A plain `Stop` (Claude just finished a turn) does **not** arm anything, so normal completions never trigger an idle alert. Responding (answering the question / a tool completing / typing) disarms it.
@@ -53,13 +53,17 @@ The easiest way is to run `/idle-alert` and let the wizard write it; you can als
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `WEBHOOK_URL` | Feishu custom-bot webhook (required, **empty = everything stays silent**) | none |
+| `FEISHU_ENABLED` | Enable Feishu notifications (true/false, **at least one must be true**) | false |
+| `WEBHOOK_URL` | Feishu custom-bot webhook (only used if FEISHU_ENABLED=true) | none |
+| `DINGTALK_ENABLED` | Enable DingTalk notifications (true/false, **at least one must be true**) | false |
+| `DINGTALK_WEBHOOK_URL` | DingTalk custom-bot webhook (only used if DINGTALK_ENABLED=true) | none |
 | `TIER1_DELAY` | Seconds idle before the tier-1 alert | 120 |
 | `TIER2_DELAY` | Seconds idle before escalation (must be > TIER1) | 600 |
 | `AT_OPEN_ID` | Feishu open_id to @ on escalation (optional) | empty |
 | `KEYWORD` | Feishu custom keyword (must appear in the message) | Claude |
 
-**No webhook configured → silent `exit 0` throughout, zero side effects** — so installing without configuring won't disturb anyone.
+**No service enabled → silent `exit 0` throughout, zero side effects** — so installing without configuring won't disturb anyone.
+At least one service (set `FEISHU_ENABLED=true` or `DINGTALK_ENABLED=true`) should be enabled for alerts to work.
 If installed but not yet configured, every session (once per day) will **actively remind** you to run `/idle-alert` (SessionStart check).
 
 **Custom config location**: defaults to `~/.claude/idle-alert/config.sh` (separate from the install dir, so it survives upgrades).
@@ -135,7 +139,8 @@ Feishu-side prerequisites (grant all permissions with the **"application" identi
 ## Roadmap
 
 - [x] Tier-3 urgent phone call (Feishu custom app `urgent_phone`)
-- [ ] Multi-channel (DingTalk / WeCom / Telegram / Bark) — just change the payload in `notify.sh`
+- [x] DingTalk support — send to both Feishu and DingTalk webhooks
+- [ ] Multi-channel (WeCom / Telegram / Bark) — just change the payload in `notify.sh`
 
 ## License
 
