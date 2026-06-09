@@ -1,0 +1,104 @@
+Subject: Claude Code Plugin Submission - claude-idle-alert
+
+---
+
+Dear Anthropic Team,
+
+I would like to submit a Claude Code plugin to the official plugin marketplace.
+
+## Plugin Information
+
+- **Plugin Name**: claude-idle-alert
+- **GitHub Repository**: https://github.com/Caspian-Sun/claude-idle-alert
+- **Current Version**: 1.0.8
+- **License**: MIT
+- **Author**: Caspian-Sun
+
+## Overview
+
+Claude Code **away-from-keyboard alert plugin** (dead-man's switch). When Claude needs your decision (asking a question, awaiting plan approval, or permission prompt), it immediately notifies you via **Feishu or DingTalk**. If you don't respond within 2/10 minutes, it escalates the reminder. Optionally supports Feishu phone urgency for critical notifications.
+
+## Key Features
+
+✅ **Multi-channel support** (Feishu + DingTalk webhooks)
+✅ **Zero-config installation** (auto-wired hooks on install)
+✅ **Bilingual documentation** (English main branch + Chinese zh branch)
+✅ **Professional release process** (SemVer versioning + automated scripts)
+✅ **Interactive setup wizard** (/idle-alert skill)
+✅ **Tier-3 phone urgency** (Feishu custom app support)
+✅ **MIT open source**
+
+## Installation
+
+```bash
+claude plugin marketplace add https://github.com/Caspian-Sun/claude-idle-alert.git
+claude plugin install claude-idle-alert
+```
+
+Then run `/idle-alert` to configure notifications interactively.
+
+## Documentation
+
+- ✅ README.md (English & Chinese)
+- ✅ RELEASE.md (Release process & SemVer guidelines)
+- ✅ SKILL.md (Configuration wizard guide)
+- ✅ plugin.json (Complete metadata)
+- ✅ Comprehensive code comments
+- ✅ Error handling & troubleshooting
+
+## Technical Details
+
+| Aspect | Details |
+|--------|---------|
+| Language | Bash Shell Script |
+| Size | ~10KB core code |
+| Dependencies | jq, curl (standard tools) |
+| Compatibility | macOS, Linux |
+| Security | No credentials stored in codebase |
+| Maintenance | Automated release pipeline |
+
+## Problem Solved
+
+Claude Code users often step away from their computer while Claude waits for a critical decision. Without notification, they don't know Claude is blocked. This plugin provides a tiered alert system:
+- **Instant**: Immediate webhook notification
+- **Tier 1**: Reminder after 2 minutes of inactivity
+- **Tier 2**: Escalation with @mention after 10 minutes
+- **Tier 3** (optional): Feishu phone call after 20 minutes
+
+## Target Users
+
+- Claude Code users who need to be notified of blocking decisions
+- Teams using Feishu/DingTalk for communication
+- Users working away from keyboard during long Claude runs
+
+## Quality Assurance
+
+- ✅ Syntax validation (bash -n)
+- ✅ Version consistency checks
+- ✅ Automated deployment pipeline
+- ✅ Bilingual support (main branch English, zh branch Chinese)
+- ✅ Comprehensive error handling
+- ✅ Configuration migration tools
+
+## Additional Resources
+
+- Full project documentation and examples
+- Automated release script (./scripts/release.sh)
+- Configuration migration tool (./scripts/migrate-config.sh)
+- Issue tracking and community support
+- GitHub discussions for feedback
+
+## Contact
+
+- **GitHub**: https://github.com/Caspian-Sun/claude-idle-alert
+- **Issues**: https://github.com/Caspian-Sun/claude-idle-alert/issues
+
+I believe this plugin provides real value for Claude Code users, especially those requiring responsive workflows. I'm ready to make any necessary adjustments based on your feedback.
+
+Thank you for considering this submission!
+
+---
+
+**Submission Date**: June 9, 2026
+**Plugin Status**: ✅ Production Ready
+**Attachments**: SUBMISSION.md, GitHub Repository
